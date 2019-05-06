@@ -24,21 +24,27 @@ class AutoFunctions {
     "private protected"
   ];
 
+  /**
+   * Constructs an AutoFunctions class
+   * @param {vscode.TextEditor} editor The current editor
+   */
   constructor(editor: vscode.TextEditor) {
     this.editor = editor;
   }
 
+  /**
+   * Generates the functions for the current document
+   */
   public generateFunctions() {
     const parsedProperties = this.parseDoc();
 
-    this.generateFunctionsSnippet(parsedProperties);
-
-    // this.editor.insertSnippet(
-    //   new vscode.SnippetString(functionsSnippet),
-    //   position
-    // );
+    this.insertFunctionsSnippet(parsedProperties);
   }
 
+  /**
+   * Parses the document and returns the properties
+   * @returns {Property[]} A list of the properties
+   */
   private parseDoc(): Property[] {
     let properties: Property[] = [];
 
@@ -70,6 +76,9 @@ class AutoFunctions {
     return properties;
   }
 
+  /**
+   * Gets the current class' name
+   */
   private getClassName() {
     for (let i = 0; i < this.editor.document.lineCount; i++) {
       const line = this.editor.document.lineAt(i);
@@ -84,7 +93,11 @@ class AutoFunctions {
     return null;
   }
 
-  private generateFunctionsSnippet(properties: Property[]) {
+  /**
+   * Inserts the functions using the parsed properties
+   * @param {Property[]} properties The parsed properties
+   */
+  private insertFunctionsSnippet(properties: Property[]) {
     this.editor.edit(edit => {
       let functions: string[] = [];
       const lastConstructorPos = this.findLastConstructor();
@@ -112,7 +125,11 @@ class AutoFunctions {
     });
   }
 
-  private findLastConstructor() {
+  /**
+   * Find the last constructor's position
+   * @returns {vscode.Position | null} The last constructor's position or null if there's no constructor
+   */
+  private findLastConstructor(): vscode.Position | null {
     let blockOpen: string[] = [];
     let lastConstructorPos: vscode.Position | null = null;
 
