@@ -114,13 +114,15 @@ class AutoFunctions {
         functions.push(snippet);
       }
 
-      if (lastConstructorPos) {
-        edit.insert(lastConstructorPos, "\n" + functions.join("\n"));
-      } else if (this.properties.length > 0) {
-        edit.insert(
-          this.properties[this.properties.length - 1].insertPos.end,
-          "\n" + functions.join("\n")
-        );
+      if (this.properties.length > 0) {
+        if (lastConstructorPos) {
+          edit.insert(lastConstructorPos, "\n" + functions.join("\n"));
+        } else if (this.properties.length > 0) {
+          edit.insert(
+            this.properties[this.properties.length - 1].insertPos.end,
+            "\n" + functions.join("\n")
+          );
+        }
       }
     });
   }
