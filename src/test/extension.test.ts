@@ -52,7 +52,7 @@ describe("AutoFunctions", () => {
       autoFunctions = new AutoFunctions(editor);
     });
 
-    it("should find and parse properties", () => {
+    it("shouldn't find and parse properties", () => {
       autoFunctions.parseDoc();
       assert.deepEqual(autoFunctions.properties, []);
     });
@@ -61,8 +61,8 @@ describe("AutoFunctions", () => {
       assert.equal(autoFunctions.getClassName(), "Empty");
     });
 
-    it("should find last constructor", () => {
-      assert.equal(autoFunctions.findLastConstructor(), null);
+    it("shouldn't find last constructor", () => {
+      assert.deepEqual(autoFunctions.findLastConstructor(), null);
     });
 
     it("shouldn't insert functions", async () => {
