@@ -76,6 +76,47 @@ describe("AutoFunctions", () => {
       });
     });
   });
+
+  describe("NoProperites", async () => {
+    before(async () => {
+      const uri = vscode.Uri.file(
+        path.join(__dirname + "/../../test/files/before/NoProperties.cs")
+      );
+      const document = await vscode.workspace.openTextDocument(uri);
+      const editor = await vscode.window.showTextDocument(document);
+
+      await sleep(500);
+
+      autoFunctions = new AutoFunctions(editor);
+    });
+
+    it("shouldn't find and parse properties", () => {
+      autoFunctions.parseDoc();
+      assert.deepEqual(autoFunctions.properties, []);
+    });
+
+    it("should get then class' name", () => {
+      assert.equal(autoFunctions.getClassName(), "NoProperties");
+    });
+
+    it("should find last constructor", () => {
+      assert.deepEqual(autoFunctions.findLastConstructor(), {
+        _line: 6,
+        _character: 33
+      });
+    });
+
+    it("shouldn't insert functions", async () => {
+      autoFunctions.insertFunctionsSnippet();
+
+      await readFile("files/after/NoProperties.cs").then(file => {
+        assert.equal(
+          autoFunctions.editor.document.getText(),
+          file.replace("TestingAfter", "TestingBefore")
+        );
+      });
+    });
+  });
 });
 
 // suite("AutoFunctions", () => {
