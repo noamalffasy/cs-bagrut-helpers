@@ -68,6 +68,8 @@ describe("AutoFunctions", () => {
     it("shouldn't insert functions", async () => {
       autoFunctions.insertFunctionsSnippet();
 
+      await sleep(500);
+
       await readFile("files/after/Empty.cs").then(file => {
         assert.equal(
           autoFunctions.editor.document.getText(),
@@ -109,7 +111,66 @@ describe("AutoFunctions", () => {
     it("shouldn't insert functions", async () => {
       autoFunctions.insertFunctionsSnippet();
 
+      await sleep(500);
+
       await readFile("files/after/NoProperties.cs").then(file => {
+        assert.equal(
+          autoFunctions.editor.document.getText(),
+          file.replace("TestingAfter", "TestingBefore")
+        );
+      });
+    });
+  });
+
+  describe("NoConstructor", async () => {
+    before(async () => {
+      const uri = vscode.Uri.file(
+        path.join(__dirname + "/../../test/files/before/NoConstructor.cs")
+      );
+      const document = await vscode.workspace.openTextDocument(uri);
+      const editor = await vscode.window.showTextDocument(document);
+
+      await sleep(500);
+
+      autoFunctions = new AutoFunctions(editor);
+    });
+
+    it("should find and parse properties", () => {
+      autoFunctions.parseDoc();
+      assert.deepEqual(autoFunctions.properties, [
+        {
+          original: "        private int name;",
+          protectionLevel: "private",
+          type: "int",
+          name: "name",
+          insertPos: {
+            _start: {
+              _character: 0,
+              _line: 6
+            },
+            _end: {
+              _character: 25,
+              _line: 6
+            }
+          }
+        }
+      ]);
+    });
+
+    it("should get then class' name", () => {
+      assert.equal(autoFunctions.getClassName(), "NoConstructor");
+    });
+
+    it("shouldn't find last constructor", () => {
+      assert.deepEqual(autoFunctions.findLastConstructor(), null);
+    });
+
+    it("should insert functions", async () => {
+      autoFunctions.insertFunctionsSnippet();
+
+      await sleep(500);
+
+      await readFile("files/after/NoConstructor.cs").then(file => {
         assert.equal(
           autoFunctions.editor.document.getText(),
           file.replace("TestingAfter", "TestingBefore")
