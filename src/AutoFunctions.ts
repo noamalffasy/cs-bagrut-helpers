@@ -13,9 +13,10 @@ function capitalizeFirstLetter(str: string) {
 }
 
 class AutoFunctions {
-  private editor: vscode.TextEditor;
+  public editor: vscode.TextEditor;
+  public properties: Property[] = [];
 
-  private accessibilityLevels = [
+  public accessibilityLevels = [
     "public",
     "protected",
     "internal",
@@ -36,16 +37,14 @@ class AutoFunctions {
    * Generates the functions for the current document
    */
   public generateFunctions() {
-    const parsedProperties = this.parseDoc();
-
-    this.insertFunctionsSnippet(parsedProperties);
+    this.parseDoc();
+    this.insertFunctionsSnippet();
   }
 
   /**
    * Parses the document and returns the properties
-   * @returns {Property[]} A list of the properties
    */
-  private parseDoc(): Property[] {
+  public parseDoc() {
     let properties: Property[] = [];
 
     for (let i = 0; i < this.editor.document.lineCount; i++) {
@@ -73,17 +72,19 @@ class AutoFunctions {
       }
     }
 
-    return properties;
+    this.properties = properties;
   }
 
   /**
    * Gets the current class' name
    */
-  private getClassName() {
+  public getClassName() {
     for (let i = 0; i < this.editor.document.lineCount; i++) {
       const line = this.editor.document.lineAt(i);
       const lineText = line.text;
-      const classDeclaration = lineText.match(/\s*[A-Ba-z\t\n]*class ([A-Za-z0-9_]+).*/);
+      const classDeclaration = lineText.match(
+        /\s*[A-Ba-z\t\n]*class ([A-Za-z0-9_]+).*/
+      );
 
       if (classDeclaration) {
         return classDeclaration[1];
@@ -95,14 +96,13 @@ class AutoFunctions {
 
   /**
    * Inserts the functions using the parsed properties
-   * @param {Property[]} properties The parsed properties
    */
-  private insertFunctionsSnippet(properties: Property[]) {
+  public insertFunctionsSnippet() {
     this.editor.edit(edit => {
       let functions: string[] = [];
       const lastConstructorPos = this.findLastConstructor();
 
-      for (const property of properties) {
+      for (const property of this.properties) {
         const snippet = `
         public ${property.type} Get${capitalizeFirstLetter(
           property.name
@@ -116,9 +116,9 @@ class AutoFunctions {
 
       if (lastConstructorPos) {
         edit.insert(lastConstructorPos, "\n" + functions.join("\n"));
-      } else {
+      } else if (this.properties.length > 0) {
         edit.insert(
-          properties[properties.length - 1].insertPos.end,
+          this.properties[this.properties.length - 1].insertPos.end,
           "\n" + functions.join("\n")
         );
       }
@@ -129,7 +129,7 @@ class AutoFunctions {
    * Find the last constructor's position
    * @returns {vscode.Position | null} The last constructor's position or null if there's no constructor
    */
-  private findLastConstructor(): vscode.Position | null {
+  public findLastConstructor(): vscode.Position | null {
     let blockOpen: string[] = [];
     let lastConstructorPos: vscode.Position | null = null;
 
