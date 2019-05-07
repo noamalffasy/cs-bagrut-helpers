@@ -1,22 +1,88 @@
-//
-// Note: This example test is leveraging the Mocha test framework.
-// Please refer to their documentation on https://mochajs.org/ for help.
-//
+import * as fs from "fs";
+import * as path from "path";
 
-// The module 'assert' provides assertion methods from node
-import * as assert from 'assert';
+import * as assert from "assert";
+import * as vscode from "vscode";
 
-// You can import and use all API from the 'vscode' module
-// as well as import your extension to test it
-// import * as vscode from 'vscode';
-// import * as myExtension from '../extension';
+import AutoFunctions from "../AutoFunctions";
 
-// Defines a Mocha test suite to group tests of similar kind together
-suite("Extension Tests", function () {
+/**
+ * Pause the code for a specified amount of time
+ * @param {number} ms The amount of milliseconds to wait
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
 
-    // Defines a Mocha unit test
-    test("Something 1", function() {
-        assert.equal(-1, [1, 2, 3].indexOf(5));
-        assert.equal(-1, [1, 2, 3].indexOf(0));
+/**
+ * Reads the file in the specified path
+ * @param {string} filePath The path of the file to read
+ * @returns {Promise<string>} The file's content
+ */
+function readFile(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    fs.readFile(
+      path.join(__dirname + "/../../test/" + filePath),
+      "utf8",
+      (err, fileContents) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(fileContents);
+      }
+    );
+  });
+}
+
+let autoFunctions: AutoFunctions;
+
+describe("AutoFunctions", () => {
+  describe("Empty", async () => {
+    before(async () => {
+      const uri = vscode.Uri.file(
+        path.join(__dirname + "/../../test/files/before/Empty.cs")
+      );
+      const document = await vscode.workspace.openTextDocument(uri);
+      const editor = await vscode.window.showTextDocument(document);
+
+      await sleep(500);
+
+      autoFunctions = new AutoFunctions(editor);
     });
+
+    it("should find and parse properties", () => {
+      autoFunctions.parseDoc();
+      assert.deepEqual(autoFunctions.properties, []);
+    });
+
+    it("should get then class' name", () => {
+      assert.equal(autoFunctions.getClassName(), "Empty");
+    });
+
+    it("should find last constructor", () => {
+      assert.equal(autoFunctions.findLastConstructor(), null);
+    });
+
+    it("shouldn't insert functions", async () => {
+      autoFunctions.insertFunctionsSnippet();
+
+      await readFile("files/after/Empty.cs").then(file => {
+        assert.equal(
+          autoFunctions.editor.document.getText(),
+          file.replace("TestingAfter", "TestingBefore")
+        );
+      });
+    });
+  });
 });
+
+// suite("AutoFunctions", () => {
+//     test("Empty", async () => {
+//       autoFunctions.generateFunctions();
+//       await readFile("files/after/Empty.cs").then(result => {
+//         assert.equal(editor.document.getText(), result.replace("TestingAfter", "TestingBefore"));
+//       });
+//     });
+// });
