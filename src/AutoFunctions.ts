@@ -55,7 +55,7 @@ class AutoFunctions implements vscode.CodeActionProvider {
       document.lineAt(range.start.line)
     );
     const fix = new vscode.CodeAction(
-      "Add a getter and setter",
+      "Generate a getter and setter for the property",
       vscode.CodeActionKind.QuickFix
     );
 
