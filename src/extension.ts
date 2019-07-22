@@ -24,7 +24,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 function activateCodeAction() {
   const editor = vscode.window.activeTextEditor!;
-  console.log(editor);
   return new AutoFunctions(editor);
 }
 
