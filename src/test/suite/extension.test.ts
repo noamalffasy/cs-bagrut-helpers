@@ -235,6 +235,77 @@ describe("AutoFunctions", () => {
       });
     });
   });
+
+  describe("MultiProperties", async () => {
+    before(async () => {
+      const uri = vscode.Uri.file(getFilePath("files/before/MultiProperties.cs"));
+      const document = await vscode.workspace.openTextDocument(uri);
+      const editor = await vscode.window.showTextDocument(document);
+
+      await sleep(500);
+
+      autoFunctions = new AutoFunctions(editor);
+    });
+
+    it("should find and parse properties", () => {
+      autoFunctions.parseDoc();
+      assert.deepEqual(autoFunctions.properties, [
+        {
+          original: "        private int first;",
+          protectionLevel: "private",
+          type: "int",
+          name: "first",
+          insertPos: {
+            _start: {
+              _character: 0,
+              _line: 6
+            },
+            _end: {
+              _character: 26,
+              _line: 6
+            }
+          }
+        },
+        {
+          original: "        private int second;",
+          protectionLevel: "private",
+          type: "int",
+          name: "second",
+          insertPos: {
+            _start: {
+              _character: 0,
+              _line: 7
+            },
+            _end: {
+              _character: 27,
+              _line: 7
+            }
+          }
+        }
+      ]);
+    });
+
+    it("should get then class' name", () => {
+      assert.equal(autoFunctions.getClassName(), "MultiProperties");
+    });
+
+    it("shouldn't find last constructor", () => {
+      assert.deepEqual(autoFunctions.findLastConstructor(), null);
+    });
+
+    it("should insert functions", async () => {
+      autoFunctions.insertFunctionsSnippet();
+
+      await sleep(500);
+
+      await readFile("files/after/MultiProperties.cs").then(file => {
+        assert.equal(
+          autoFunctions.editor.document.getText(),
+          file.replace("TestingAfter", "TestingBefore")
+        );
+      });
+    });
+  });
 });
 
 // suite("AutoFunctions", () => {
