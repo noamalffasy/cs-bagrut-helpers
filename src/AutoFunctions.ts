@@ -92,7 +92,7 @@ class AutoFunctions implements vscode.CodeActionProvider {
     const insertPos = line.range;
     const lineText = line.text;
 
-    // [protectionLevel] type name [... whatever];
+    // Regex: '([Protection Level]?) ([Type]) ([Name]) [Anything];'
     const results = /(?:([a-zA-Z]+) )?([a-zA-Z\[\]]+) ([a-zA-Z0-9]+).*;/.exec(
       lineText
     );
@@ -135,6 +135,7 @@ class AutoFunctions implements vscode.CodeActionProvider {
     for (let i = 0; i < this.editor.document.lineCount; i++) {
       const line = this.editor.document.lineAt(i);
       const lineText = line.text;
+      // Regex: '[Whitespace]? [Anything]? class ([Name]) [Anything]'
       const classDeclaration = lineText.match(
         /\s*[A-Ba-z\t\n]*class ([A-Za-z0-9_]+).*/
       );
@@ -207,9 +208,14 @@ class AutoFunctions implements vscode.CodeActionProvider {
       const line = this.editor.document.lineAt(i);
       const lineText = line.text;
 
+      // Looks for the block title and adds it to the 'blockOpen' array
       if (lineText.includes("{")) {
+        // Regex: '[Whitespace]? {'
         const checkOnlyBrace = lineText.match(/\s*{/);
+        // Regex: '[Whitespace]? [Anything] {'
         const checkBraceWithText = lineText.match(/\s*[A-Za-z\s\(\)]+ {.*/);
+
+        // Checks if the current line contains the block's title
         if (
           (!checkOnlyBrace || checkOnlyBrace[0] !== lineText) &&
           (checkBraceWithText && checkBraceWithText[0] === lineText)
@@ -217,6 +223,7 @@ class AutoFunctions implements vscode.CodeActionProvider {
           blockOpen.push(lineText);
         } else {
           let currentLine = this.editor.document.lineAt(line.lineNumber - 1);
+          // Passes on the lines backwards until it finds the line with the current block's title
           while (currentLine.text.trim() === "") {
             currentLine = this.editor.document.lineAt(
               currentLine.lineNumber - 1
@@ -226,10 +233,12 @@ class AutoFunctions implements vscode.CodeActionProvider {
         }
       }
 
+      // Looks for the end position of the last block's title
       if (lineText.includes("}") && blockOpen.length > 0) {
         if (blockOpen[blockOpen.length - 1].includes(blockTitle)) {
           lastBlockPos = line.range.end;
         }
+        // Removes the last block's title if the wanted block wasn't found
         blockOpen.pop();
       }
     }
