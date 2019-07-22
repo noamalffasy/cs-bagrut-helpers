@@ -4,6 +4,14 @@ import AutoFunctions from "./AutoFunctions";
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
+    vscode.languages.registerCodeActionsProvider(
+      { language: "csharp" },
+      activateCodeAction(),
+      { providedCodeActionKinds: AutoFunctions.providedCodeActionKinds }
+    )
+  );
+
+  context.subscriptions.push(
     vscode.commands.registerCommand("extension.generatePropertyFunctions", () =>
       activateOnCommand()
     )
@@ -14,8 +22,15 @@ export function activate(context: vscode.ExtensionContext) {
   // );
 }
 
+function activateCodeAction() {
+  const editor = vscode.window.activeTextEditor!;
+  console.log(editor);
+  return new AutoFunctions(editor);
+}
+
 function activateOnCommand() {
   const editor = vscode.window.activeTextEditor;
+
   if (editor) {
     const autoFunctions = new AutoFunctions(editor);
     autoFunctions.generateFunctions();

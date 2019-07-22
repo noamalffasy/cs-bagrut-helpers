@@ -12,7 +12,7 @@ function capitalizeFirstLetter(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-class AutoFunctions {
+class AutoFunctions implements vscode.CodeActionProvider {
   public editor: vscode.TextEditor;
   public properties: Property[] = [];
 
@@ -25,6 +25,10 @@ class AutoFunctions {
     "private protected"
   ];
 
+  public static readonly providedCodeActionKinds = [
+    vscode.CodeActionKind.QuickFix
+  ];
+
   /**
    * Constructs an AutoFunctions class
    * @param {vscode.TextEditor} editor The current editor
@@ -34,7 +38,45 @@ class AutoFunctions {
   }
 
   /**
-   * Generates the functions for the current document
+   * Provides the code actions (a required function by the VS Code API)
+   * @param {vscode.TextDocument} document The current document
+   * @param {vscode.Range | vscode.Selection} range The current range
+   * @param {vscode.CodeActionContext} _context The context of the code action
+   * @param {vscode.CancellationToken} _token The cancellation token
+   * @returns {vscode.ProviderResult<vscode.CodeAction[]>}
+   */
+  provideCodeActions(
+    document: vscode.TextDocument,
+    range: vscode.Range | vscode.Selection,
+    _context: vscode.CodeActionContext,
+    _token: vscode.CancellationToken
+  ): vscode.ProviderResult<vscode.CodeAction[]> {
+    const parsedProperty = this.getPropertyFromLine(
+      document.lineAt(range.start.line)
+    );
+    const fix = new vscode.CodeAction(
+      "Add a getter and setter",
+      vscode.CodeActionKind.QuickFix
+    );
+
+    if (!parsedProperty) {
+      return;
+    }
+
+    this.parseDoc();
+
+    fix.edit = new vscode.WorkspaceEdit();
+    fix.edit.insert(
+      document.uri,
+      this.findInsertionPoint(),
+      this.generateFunctionsSnippet(parsedProperty)
+    );
+
+    return [fix];
+  }
+
+  /**
+   * Generates the functions for the current document and inserts them
    */
   public generateFunctions() {
     this.parseDoc();
@@ -42,37 +84,48 @@ class AutoFunctions {
   }
 
   /**
-   * Parses the document and returns the properties
+   * Parses a wanted line and returns property info if it contains any
+   * @param {vscode.TextLine} line The line to parse
+   * @returns {Property | null} The property info or null if it doesn't contain a property
+   */
+  public getPropertyFromLine(line: vscode.TextLine): Property | null {
+    const insertPos = line.range;
+    const lineText = line.text;
+
+    // [protectionLevel] type name [... whatever];
+    const results = /(?:([a-zA-Z]+) )?([a-zA-Z\[\]]+) ([a-zA-Z0-9]+).*;/.exec(
+      lineText
+    );
+
+    if (results) {
+      // Checks protection level
+      if (results[1] && this.accessibilityLevels.indexOf(results[1]) > -1) {
+        return {
+          original: lineText,
+          protectionLevel: results[1],
+          type: results[2],
+          name: results[3],
+          insertPos
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Parses the document and sets the properties
    */
   public parseDoc() {
-    let properties: Property[] = [];
+    this.properties = [];
 
     for (let i = 0; i < this.editor.document.lineCount; i++) {
       const line = this.editor.document.lineAt(i);
-      const insertPos = line.range;
-      const lineText = line.text;
+      const property = this.getPropertyFromLine(line);
 
-      // [protectionLevel] type name [... whatever];
-      const results = /(?:([a-zA-Z]+) )?([a-zA-Z\[\]]+) ([a-zA-Z]+).*;/.exec(
-        lineText
-      );
-
-      if (results) {
-        // Check protection level
-        if (results[1] && this.accessibilityLevels.indexOf(results[1]) > -1) {
-          // Add the property into an array
-          properties.push({
-            original: lineText,
-            protectionLevel: results[1],
-            type: results[2],
-            name: results[3],
-            insertPos
-          });
-        }
+      if (property) {
+        this.properties.push(property);
       }
     }
-
-    this.properties = properties;
   }
 
   /**
@@ -95,45 +148,60 @@ class AutoFunctions {
   }
 
   /**
+   * Generates the functions for the wanted parsed property
+   * @param {Property} property The property to generate from
+   * @returns {string} The functions generated
+   */
+  public generateFunctionsSnippet(property: Property): string {
+    return (
+      "\n" +
+      `
+        public ${property.type} Get${capitalizeFirstLetter(
+        property.name
+      )}() { return this.${property.name}; }
+        public void Set${capitalizeFirstLetter(property.name)}(${
+        property.type
+      } ${property.name}) { this.${property.name} = ${property.name}; }`
+    );
+  }
+
+  /**
    * Inserts the functions using the parsed properties
    */
   public insertFunctionsSnippet() {
     this.editor.edit(edit => {
       let functions: string[] = [];
-      const lastConstructorPos = this.findLastConstructor();
 
       for (const property of this.properties) {
-        const snippet = `
-        public ${property.type} Get${capitalizeFirstLetter(
-          property.name
-        )}() { return this.${property.name}; }
-        public void Set${capitalizeFirstLetter(property.name)}(${
-          property.type
-        } ${property.name}) { this.${property.name} = ${property.name}; }`;
-
+        const snippet = this.generateFunctionsSnippet(property);
         functions.push(snippet);
       }
 
       if (this.properties.length > 0) {
-        if (lastConstructorPos) {
-          edit.insert(lastConstructorPos, "\n" + functions.join("\n"));
-        } else if (this.properties.length > 0) {
-          edit.insert(
-            this.properties[this.properties.length - 1].insertPos.end,
-            "\n" + functions.join("\n")
-          );
-        }
+        edit.insert(this.findInsertionPoint(), functions.join("\n"));
       }
     });
   }
 
   /**
-   * Find the last constructor's position
-   * @returns {vscode.Position | null} The last constructor's position or null if there's no constructor
+   * Finds the insertion point
    */
-  public findLastConstructor(): vscode.Position | null {
+  public findInsertionPoint() {
+    return (
+      this.findLastGetterOrSetter() ||
+      this.findLastConstructor() ||
+      this.properties[this.properties.length - 1].insertPos.end
+    );
+  }
+
+  /**
+   * Finds the last block with a specified title
+   * @param blockTitle The title of the block to look for
+   * @returns {vscode.Position | null} The last position of the wanted block or 'null' if no matching block were found
+   */
+  public findLastBlock(blockTitle: string): vscode.Position | null {
     let blockOpen: string[] = [];
-    let lastConstructorPos: vscode.Position | null = null;
+    let lastBlockPos: vscode.Position | null = null;
 
     for (let i = 0; i < this.editor.document.lineCount; i++) {
       const line = this.editor.document.lineAt(i);
@@ -159,18 +227,40 @@ class AutoFunctions {
       }
 
       if (lineText.includes("}") && blockOpen.length > 0) {
-        if (
-          blockOpen[blockOpen.length - 1].includes(
-            `public ${this.getClassName()}`
-          )
-        ) {
-          lastConstructorPos = line.range.end;
+        if (blockOpen[blockOpen.length - 1].includes(blockTitle)) {
+          lastBlockPos = line.range.end;
         }
         blockOpen.pop();
       }
     }
 
-    return lastConstructorPos;
+    return lastBlockPos;
+  }
+
+  /**
+   * Finds the last getter's or setter's position (depending on which one is the last)
+   * @returns {vscode.Position | null} The last getter's or setter's position or null if none exists
+   */
+  public findLastGetterOrSetter(): vscode.Position | null {
+    const lastGetPos = this.findLastBlock(`Get`);
+    const lastSetPos = this.findLastBlock(`Set`);
+
+    if (lastGetPos && lastSetPos) {
+      return lastSetPos.isAfter(lastGetPos) ? lastSetPos : lastGetPos;
+    } else if (lastSetPos) {
+      return lastSetPos;
+    } else if (lastGetPos) {
+      return lastGetPos;
+    }
+    return null;
+  }
+
+  /**
+   * Find the last constructor's position
+   * @returns {vscode.Position | null} The last constructor's position or null if there's no constructor
+   */
+  public findLastConstructor(): vscode.Position | null {
+    return this.findLastBlock(`public ${this.getClassName()}`);
   }
 }
 
