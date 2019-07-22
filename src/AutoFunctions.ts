@@ -179,7 +179,7 @@ class AutoFunctions implements vscode.CodeActionProvider {
       }
 
       if (this.properties.length > 0) {
-        edit.insert(this.findInsertionPoint(), functions.join("\n"));
+        edit.insert(this.findInsertionPoint(), functions.join(""));
       }
     });
   }
