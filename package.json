@@ -3,8 +3,9 @@
 	"displayName": "C# Bagrut Helpers",
 	"description": "Includes generators to speed up work on Computer Science projects",
 	"version": "0.0.1",
+	"publisher": "noamalffasy",
 	"engines": {
-		"vscode": "^1.33.0"
+		"vscode": "^1.36.1"
 	},
 	"categories": [
 		"Other"
@@ -22,17 +23,25 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "yarn run compile",
+		"vscode:prepublish": "yarn compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -watch -p ./",
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "yarn run compile && node ./node_modules/vscode/bin/test"
+		"test": "yarn compile && node ./out/test/runTest"
 	},
 	"devDependencies": {
-		"typescript": "^3.3.1",
-		"vscode": "^1.1.28",
-		"tslint": "^5.12.1",
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^2.2.42",
 		"@types/node": "^10.12.21",
-		"@types/mocha": "^2.2.42"
-	}
+		"@types/vscode": "^1.36.0",
+		"glob": "^7.1.4",
+		"mocha": "4",
+		"tslint": "^5.12.1",
+		"typescript": "^3.3.1",
+		"vscode-test": "^1.0.2"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/noamalffasy/cs-bagrut-helpers"
+	},
+	"license": "MIT"
 }

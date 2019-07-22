@@ -4,7 +4,7 @@ import * as path from "path";
 import * as assert from "assert";
 import * as vscode from "vscode";
 
-import AutoFunctions from "../AutoFunctions";
+import AutoFunctions from "../../AutoFunctions";
 
 /**
  * Pause the code for a specified amount of time
