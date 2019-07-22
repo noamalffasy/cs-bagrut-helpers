@@ -17,22 +17,27 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Gets the absolute file path
+ * @param {string} relativeFilePath The relative file path to get
+ * @returns {string} The absoulte file path
+ */
+function getFilePath(relativeFilePath: string): string {
+  return path.join(__dirname, "/../../../test/", relativeFilePath);
+}
+
+/**
  * Reads the file in the specified path
  * @param {string} filePath The path of the file to read
  * @returns {Promise<string>} The file's content
  */
 function readFile(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    fs.readFile(
-      path.join(__dirname + "/../../test/" + filePath),
-      "utf8",
-      (err, fileContents) => {
-        if (err) {
-          reject(err);
-        }
-        resolve(fileContents);
+    fs.readFile(getFilePath(filePath), "utf8", (err, fileContents) => {
+      if (err) {
+        reject(err);
       }
-    );
+      resolve(fileContents);
+    });
   });
 }
 
@@ -41,9 +46,7 @@ let autoFunctions: AutoFunctions;
 describe("AutoFunctions", () => {
   describe("Empty", async () => {
     before(async () => {
-      const uri = vscode.Uri.file(
-        path.join(__dirname + "/../../test/files/before/Empty.cs")
-      );
+      const uri = vscode.Uri.file(getFilePath("files/before/Empty.cs"));
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
@@ -81,9 +84,7 @@ describe("AutoFunctions", () => {
 
   describe("NoProperites", async () => {
     before(async () => {
-      const uri = vscode.Uri.file(
-        path.join(__dirname + "/../../test/files/before/NoProperties.cs")
-      );
+      const uri = vscode.Uri.file(getFilePath("files/before/NoProperties.cs"));
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
@@ -124,9 +125,7 @@ describe("AutoFunctions", () => {
 
   describe("NoConstructor", async () => {
     before(async () => {
-      const uri = vscode.Uri.file(
-        path.join(__dirname + "/../../test/files/before/NoConstructor.cs")
-      );
+      const uri = vscode.Uri.file(getFilePath("files/before/NoConstructor.cs"));
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
