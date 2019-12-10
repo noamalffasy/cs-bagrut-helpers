@@ -1,6 +1,6 @@
 # C# Bagrut Helpers <!-- omit in toc -->
 
-This extension adds commands that help you with doing Bagrut assignments.
+This extension adds commands that help you doing Bagrut assignments.
 
 ## Table of Contents <!-- omit in toc -->
 
