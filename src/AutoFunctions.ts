@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 interface Property {
   original: string;
   protectionLevel?: string;
+  isStatic: boolean;
   type: string;
   name: string;
   insertPos: vscode.Range;
@@ -92,8 +93,8 @@ class AutoFunctions implements vscode.CodeActionProvider {
     const insertPos = line.range;
     const lineText = line.text;
 
-    // Regex: '([Protection Level]?) ([Type]) ([Name]) [Anything];'
-    const results = /(?:([a-zA-Z]+) )?([a-zA-Z\[\]]+) ([a-zA-Z0-9]+).*;/.exec(
+    // Regex: '([Protection Level]?) (static?) ([Type]) ([Name]) [Anything];'
+    const results = /(?:([a-zA-Z]+) )?(static )?([a-zA-Z\[\]<>]+) ([a-zA-Z0-9]+).*;/.exec(
       lineText
     );
 
@@ -103,8 +104,9 @@ class AutoFunctions implements vscode.CodeActionProvider {
         return {
           original: lineText,
           protectionLevel: results[1],
-          type: results[2],
-          name: results[3],
+          isStatic: results[2] !== undefined,
+          type: results[3],
+          name: results[4],
           insertPos
         };
       }
@@ -159,10 +161,10 @@ class AutoFunctions implements vscode.CodeActionProvider {
       `
         public ${property.type} Get${capitalizeFirstLetter(
         property.name
-      )}() { return this.${property.name}; }
+      )}() { return ${!property.isStatic ? "this." : ""}${property.name}; }
         public void Set${capitalizeFirstLetter(property.name)}(${
         property.type
-      } ${property.name}) { this.${property.name} = ${property.name}; }`
+      } ${property.name}) { ${!property.isStatic ? "this." : ""}${property.name} = ${property.name}; }`
     );
   }
 
