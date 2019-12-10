@@ -140,6 +140,7 @@ describe("AutoFunctions", () => {
         {
           original: "        private int name;",
           protectionLevel: "private",
+          isStatic: false,
           type: "int",
           name: "name",
           insertPos: {
@@ -180,7 +181,9 @@ describe("AutoFunctions", () => {
 
   describe("ConstructorAndProperty", async () => {
     before(async () => {
-      const uri = vscode.Uri.file(getFilePath("files/before/ConstructorAndProperty.cs"));
+      const uri = vscode.Uri.file(
+        getFilePath("files/before/ConstructorAndProperty.cs")
+      );
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
@@ -195,6 +198,7 @@ describe("AutoFunctions", () => {
         {
           original: "        private int name;",
           protectionLevel: "private",
+          isStatic: false,
           type: "int",
           name: "name",
           insertPos: {
@@ -238,7 +242,9 @@ describe("AutoFunctions", () => {
 
   describe("MultiProperties", async () => {
     before(async () => {
-      const uri = vscode.Uri.file(getFilePath("files/before/MultiProperties.cs"));
+      const uri = vscode.Uri.file(
+        getFilePath("files/before/MultiProperties.cs")
+      );
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
@@ -253,6 +259,7 @@ describe("AutoFunctions", () => {
         {
           original: "        private int first;",
           protectionLevel: "private",
+          isStatic: false,
           type: "int",
           name: "first",
           insertPos: {
@@ -269,6 +276,7 @@ describe("AutoFunctions", () => {
         {
           original: "        private int second;",
           protectionLevel: "private",
+          isStatic: false,
           type: "int",
           name: "second",
           insertPos: {
@@ -309,7 +317,9 @@ describe("AutoFunctions", () => {
 
   describe("MultiPropertiesAndConstructor", async () => {
     before(async () => {
-      const uri = vscode.Uri.file(getFilePath("files/before/MultiPropertiesAndConstructor.cs"));
+      const uri = vscode.Uri.file(
+        getFilePath("files/before/MultiPropertiesAndConstructor.cs")
+      );
       const document = await vscode.workspace.openTextDocument(uri);
       const editor = await vscode.window.showTextDocument(document);
 
@@ -324,6 +334,7 @@ describe("AutoFunctions", () => {
         {
           original: "        private int first;",
           protectionLevel: "private",
+          isStatic: false,
           type: "int",
           name: "first",
           insertPos: {
@@ -340,6 +351,7 @@ describe("AutoFunctions", () => {
         {
           original: "        private int second;",
           protectionLevel: "private",
+          isStatic: false,
           type: "int",
           name: "second",
           insertPos: {
@@ -357,7 +369,10 @@ describe("AutoFunctions", () => {
     });
 
     it("should get then class' name", () => {
-      assert.equal(autoFunctions.getClassName(), "MultiPropertiesAndConstructor");
+      assert.equal(
+        autoFunctions.getClassName(),
+        "MultiPropertiesAndConstructor"
+      );
     });
 
     it("should find last constructor", () => {
@@ -372,7 +387,125 @@ describe("AutoFunctions", () => {
 
       await sleep(500);
 
-      await readFile("files/after/MultiPropertiesAndConstructor.cs").then(file => {
+      await readFile("files/after/MultiPropertiesAndConstructor.cs").then(
+        file => {
+          assert.equal(
+            autoFunctions.editor.document.getText(),
+            file.replace("TestingAfter", "TestingBefore")
+          );
+        }
+      );
+    });
+  });
+
+  describe("GenericProperty", async () => {
+    before(async () => {
+      const uri = vscode.Uri.file(
+        getFilePath("files/before/GenericProperty.cs")
+      );
+      const document = await vscode.workspace.openTextDocument(uri);
+      const editor = await vscode.window.showTextDocument(document);
+
+      await sleep(500);
+
+      autoFunctions = new AutoFunctions(editor);
+    });
+
+    it("should find and parse properties", () => {
+      autoFunctions.parseDoc();
+      assert.deepEqual(autoFunctions.properties, [
+        {
+          original: "        private List<int> list;",
+          protectionLevel: "private",
+          isStatic: false,
+          type: "List<int>",
+          name: "list",
+          insertPos: {
+            _start: {
+              _character: 0,
+              _line: 6
+            },
+            _end: {
+              _character: 31,
+              _line: 6
+            }
+          }
+        }
+      ]);
+    });
+
+    it("should get then class' name", () => {
+      assert.equal(autoFunctions.getClassName(), "GenericProperty");
+    });
+
+    it("shouldn't find last constructor", () => {
+      assert.deepEqual(autoFunctions.findLastConstructor(), null);
+    });
+
+    it("should insert functions", async () => {
+      autoFunctions.insertFunctionsSnippet();
+
+      await sleep(500);
+
+      await readFile("files/after/GenericProperty.cs").then(file => {
+        assert.equal(
+          autoFunctions.editor.document.getText(),
+          file.replace("TestingAfter", "TestingBefore")
+        );
+      });
+    });
+  });
+
+  describe("StaticProperty", async () => {
+    before(async () => {
+      const uri = vscode.Uri.file(
+        getFilePath("files/before/StaticProperty.cs")
+      );
+      const document = await vscode.workspace.openTextDocument(uri);
+      const editor = await vscode.window.showTextDocument(document);
+
+      await sleep(500);
+
+      autoFunctions = new AutoFunctions(editor);
+    });
+
+    it("should find and parse properties", () => {
+      autoFunctions.parseDoc();
+      assert.deepEqual(autoFunctions.properties, [
+        {
+          original: "        private static int num;",
+          protectionLevel: "private",
+          isStatic: true,
+          type: "int",
+          name: "num",
+          insertPos: {
+            _start: {
+              _character: 0,
+              _line: 6
+            },
+            _end: {
+              _character: 31,
+              _line: 6
+            }
+          }
+        }
+      ]);
+    });
+
+    it("should get then class' name", () => {
+      assert.equal(autoFunctions.getClassName(), "StaticProperty");
+    });
+
+    it("shouldn't find last constructor", () => {
+      assert.deepEqual(autoFunctions.findLastConstructor(), null);
+    });
+
+    it("should insert functions", async () => {
+      autoFunctions.insertFunctionsSnippet();
+
+      await sleep(500);
+
+      await readFile("files/after/StaticProperty.cs").then(file => {
         assert.equal(
           autoFunctions.editor.document.getText(),
           file.replace("TestingAfter", "TestingBefore")
@@ -381,12 +514,3 @@ describe("AutoFunctions", () => {
     });
   });
 });
-
-// suite("AutoFunctions", () => {
-//     test("Empty", async () => {
-//       autoFunctions.generateFunctions();
-//       await readFile("files/after/Empty.cs").then(result => {
-//         assert.equal(editor.document.getText(), result.replace("TestingAfter", "TestingBefore"));
-//       });
-//     });
-// });
